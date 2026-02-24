@@ -1,5 +1,5 @@
 import { Notice, Plugin } from "obsidian";
-import type { SyncConfig } from "@obsidian-r2-sync/shared";
+import type { SyncConfig, SyncManifest } from "@obsidian-r2-sync/shared";
 import { DEFAULT_SYNC_INTERVAL } from "@obsidian-r2-sync/shared";
 import { SyncEngine } from "./sync/engine.js";
 import { ApiClient } from "./api/client.js";
@@ -9,7 +9,7 @@ import { StatusBar } from "./ui/status-bar.js";
 /** Stored plugin data: settings + base manifest + last ETag */
 interface PluginData {
   settings: SyncConfig;
-  baseManifest: Record<string, unknown> | null;
+  baseManifest: SyncManifest | null;
   lastEtag: string | null;
 }
 
@@ -29,12 +29,13 @@ const DEFAULT_SETTINGS: SyncConfig = {
 
 export default class R2SyncPlugin extends Plugin {
   settings!: SyncConfig;
+  baseManifest: SyncManifest | null = null;
+  lastEtag: string | null = null;
   private syncEngine!: SyncEngine;
   private apiClient!: ApiClient;
   private statusBar!: StatusBar;
   private syncIntervalId: number | null = null;
-  private baseManifest: Record<string, unknown> | null = null;
-  private lastEtag: string | null = null;
+  private isSyncing = false;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -100,6 +101,12 @@ export default class R2SyncPlugin extends Plugin {
       return;
     }
 
+    if (this.isSyncing) {
+      console.log("R2 Sync: Sync already in progress, skipping");
+      return;
+    }
+
+    this.isSyncing = true;
     try {
       this.statusBar.setSyncing();
       await this.syncEngine.sync(forceFullSync);
@@ -110,6 +117,8 @@ export default class R2SyncPlugin extends Plugin {
       const message = error instanceof Error ? error.message : "Unknown error";
       new Notice(`R2 Sync: Sync failed — ${message}`);
       console.error("R2 Sync error:", error);
+    } finally {
+      this.isSyncing = false;
     }
   }
 

@@ -47,22 +47,23 @@ export class TransferQueue {
       .execute()
       .then((result) => {
         task.resolve(result);
+        this.active--;
+        this.processNext();
       })
       .catch((error) => {
         if (task.retries < MAX_RETRIES) {
           task.retries++;
           const delay = RETRY_BACKOFF_MS * Math.pow(2, task.retries - 1);
           setTimeout(() => {
+            this.active--;
             this.queue.unshift(task);
             this.processNext();
           }, delay);
         } else {
           task.reject(error instanceof Error ? error : new Error(String(error)));
+          this.active--;
+          this.processNext();
         }
-      })
-      .finally(() => {
-        this.active--;
-        this.processNext();
       });
   }
 

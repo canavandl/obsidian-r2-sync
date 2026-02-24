@@ -12,6 +12,7 @@ export class ConflictModal extends Modal {
   private localContent: string;
   private remoteContent: string;
   private resolvePromise!: (resolution: ConflictResolution) => void;
+  private resolved = false;
 
   constructor(
     app: App,
@@ -59,18 +60,21 @@ export class ConflictModal extends Modal {
 
     const keepLocalBtn = actions.createEl("button", { text: "Keep Local" });
     keepLocalBtn.addEventListener("click", () => {
+      this.resolved = true;
       this.resolvePromise("keep-local");
       this.close();
     });
 
     const keepRemoteBtn = actions.createEl("button", { text: "Keep Remote" });
     keepRemoteBtn.addEventListener("click", () => {
+      this.resolved = true;
       this.resolvePromise("keep-remote");
       this.close();
     });
 
     const mergeBtn = actions.createEl("button", { text: "Auto-merge", cls: "mod-cta" });
     mergeBtn.addEventListener("click", () => {
+      this.resolved = true;
       this.resolvePromise("merge");
       this.close();
     });
@@ -78,5 +82,10 @@ export class ConflictModal extends Modal {
 
   onClose(): void {
     this.contentEl.empty();
+    // If user closed modal without choosing (Escape, click outside), default to keep-local
+    if (!this.resolved) {
+      this.resolved = true;
+      this.resolvePromise("keep-local");
+    }
   }
 }
