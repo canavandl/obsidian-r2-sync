@@ -1,12 +1,20 @@
 # Obsidian R2 Vault Sync
 
-Sync your Obsidian vault across devices using Cloudflare R2 storage and a Cloudflare Worker.
+Sync your Obsidian vault across devices using Cloudflare R2 storage and a Cloudflare Worker — all on the free tier.
 
-## Prerequisites
+## Quick Start
+
+```bash
+npx obsidian-r2-sync setup
+```
+
+The setup wizard provisions everything on your Cloudflare account (R2 bucket, Worker, auth tokens) and walks you through each step.
+
+### Prerequisites
 
 - **Node.js** >= 20
-- **pnpm** >= 9
-- A **Cloudflare account** (free tier works)
+- A **Cloudflare account** with [R2 enabled](https://dash.cloudflare.com) (free tier works)
+- A **Cloudflare API token** (see [Creating an API Token](#2-create-a-cloudflare-api-token) below)
 
 ## Setup Guide
 
@@ -41,19 +49,10 @@ This is a one-time step. R2 has a generous free tier (10 GB storage, 10 million 
 6. Click **Continue to summary**, then **Create Token**
 7. Copy the token — you'll need it in the next step
 
-### 3. Build the project
+### 3. Run the setup wizard
 
 ```bash
-git clone <repo-url>
-cd obsidian-r2-sync
-pnpm install
-pnpm build
-```
-
-### 4. Run the setup wizard
-
-```bash
-pnpm cli setup
+npx obsidian-r2-sync setup
 ```
 
 The setup wizard will:
@@ -69,19 +68,18 @@ At the end, it will output:
 - **Token** — paste this into the plugin settings (includes device ID automatically)
 - **Auth Secret** — save this! You'll need it to add more devices
 
-### 5. Install the Obsidian plugin
+### 4. Install the Obsidian plugin
 
-Copy the built plugin into your vault:
+#### From GitHub Releases (recommended)
 
-```bash
-# Create the plugin directory
-mkdir -p /path/to/your/vault/.obsidian/plugins/obsidian-r2-sync
+1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat)
+2. In BRAT settings, click **Add Beta Plugin**
+3. Enter `canavandl/obsidian-r2-sync`
+4. Enable **R2 Vault Sync** in Settings > Community Plugins
 
-# Copy the built files
-cp packages/plugin/main.js /path/to/your/vault/.obsidian/plugins/obsidian-r2-sync/
-cp packages/plugin/manifest.json /path/to/your/vault/.obsidian/plugins/obsidian-r2-sync/
-cp packages/plugin/styles.css /path/to/your/vault/.obsidian/plugins/obsidian-r2-sync/
-```
+#### Manual installation
+
+Download `main.js`, `manifest.json`, and `styles.css` (if present) from the [latest GitHub Release](https://github.com/canavandl/obsidian-r2-sync/releases/latest) and place them in your vault at `.obsidian/plugins/obsidian-r2-sync/`.
 
 Then in Obsidian:
 1. Go to **Settings > Community Plugins**
@@ -90,24 +88,26 @@ Then in Obsidian:
    - **Worker endpoint**: paste the Worker URL from setup
    - **Auth token**: paste the token from setup (device ID is embedded in the token)
 
-### 6. Add more devices
+### 5. Add more devices
 
 To sync another device, generate a new token:
 
 ```bash
-pnpm cli add-device
+npx obsidian-r2-sync add-device
 ```
+
+Install the plugin on the new device and configure it with the same endpoint URL and the new token.
 
 ## CLI Commands
 
 | Command | Description |
 |---|---|
-| `pnpm cli setup` | Full provisioning wizard (bucket + worker + first token) |
-| `pnpm cli deploy` | Redeploy the Worker (after code changes) |
-| `pnpm cli add-device` | Generate an auth token for a new device |
-| `pnpm cli status` | Check Worker health |
-| `pnpm cli rotate-secret` | Generate a new auth secret (invalidates all device tokens) |
-| `pnpm cli teardown` | Remove Worker and optionally the R2 bucket |
+| `npx obsidian-r2-sync setup` | Full provisioning wizard (bucket + worker + first token) |
+| `npx obsidian-r2-sync deploy` | Redeploy the Worker (after updating to a new version) |
+| `npx obsidian-r2-sync add-device` | Generate an auth token for a new device |
+| `npx obsidian-r2-sync status` | Check Worker health |
+| `npx obsidian-r2-sync rotate-secret` | Generate a new auth secret (invalidates all device tokens) |
+| `npx obsidian-r2-sync teardown` | Remove Worker and optionally the R2 bucket |
 
 ## Pricing
 
@@ -128,6 +128,13 @@ See [Cloudflare Workers Pricing](https://developers.cloudflare.com/workers/platf
 ## Development
 
 ```bash
+git clone https://github.com/canavandl/obsidian-r2-sync.git
+cd obsidian-r2-sync
+pnpm install
+pnpm build
+```
+
+```bash
 # Build all packages
 pnpm build
 
@@ -137,10 +144,31 @@ pnpm dev
 # Type checking
 pnpm typecheck
 
-# Local Worker development
-cd packages/worker
-npx wrangler dev
+# Run tests
+pnpm test
+
+# Use CLI from the monorepo (local dev)
+pnpm cli setup
 ```
+
+### Releasing
+
+```bash
+# Bump version across all packages atomically
+node scripts/version.mjs 0.2.0
+
+# Update CHANGELOG.md with release notes
+# Then commit, tag, and push:
+git commit -am "release: v0.2.0"
+git tag v0.2.0
+git push origin main --tags
+```
+
+The `v*` tag triggers the [release workflow](.github/workflows/release.yml), which:
+1. Verifies version consistency across all packages
+2. Builds and tests everything
+3. Creates a GitHub Release with the Obsidian plugin assets
+4. Publishes the CLI to npm as [`obsidian-r2-sync`](https://www.npmjs.com/package/obsidian-r2-sync)
 
 ## Architecture
 
@@ -155,3 +183,7 @@ Obsidian Plugin  <-->  Cloudflare Worker  <-->  R2 Bucket
 - **CLI**: Infrastructure provisioning via Cloudflare SDK
 
 See [PLAN.md](./PLAN.md) for detailed architecture decisions.
+
+## License
+
+[MIT](./LICENSE)
