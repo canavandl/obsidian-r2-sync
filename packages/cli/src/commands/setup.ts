@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { CloudflareClient } from "../lib/cloudflare.js";
+import { CloudflareClient, readWorkerBundle } from "../lib/cloudflare.js";
+import { updateConfig } from "../lib/config.js";
 import {
   promptApiToken,
   promptAccountId,
@@ -58,20 +59,34 @@ export const setupCommand = new Command("setup")
     const workerName = await promptWorkerName();
     const workerSpinner = ora(`Deploying Worker "${workerName}"...`).start();
     try {
-      // TODO: Bundle the worker and pass the script content here
-      // For now, we indicate that wrangler deploy should be used
-      workerSpinner.warn(
-        `Worker deployment via SDK is a placeholder — use "cd packages/worker && pnpm deploy" for now`,
-      );
+      const bundle = readWorkerBundle();
+      const { url } = await cf.deployWorker(workerName, bundle, {
+        r2BucketName: bucketName,
+        authSecret: authSecret,
+      });
+      workerSpinner.succeed(`Worker deployed at ${chalk.cyan(url)}`);
     } catch (error) {
       workerSpinner.fail("Failed to deploy Worker");
-      console.error(error);
-      process.exit(1);
+      console.error(chalk.red(`  ${(error as Error).message}`));
+      console.error(chalk.dim("  You can deploy manually later with: obsidian-r2-sync deploy"));
+      // Don't exit — continue to generate the device token
     }
 
     // Step 6: Generate first device token
     const deviceId = await promptDeviceId();
     const token = await CloudflareClient.generateToken(authSecret, deviceId);
+
+    // Save config for future CLI commands
+    updateConfig({
+      apiToken,
+      accountId,
+      workerName,
+      bucketName,
+      authSecret,
+      r2AccessKeyId,
+      r2SecretAccessKey,
+      workerUrl: workerUrl || undefined,
+    });
 
     // Output results
     console.log(chalk.bold("\n✅ Setup complete!\n"));

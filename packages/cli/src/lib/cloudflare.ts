@@ -1,4 +1,24 @@
 import Cloudflare from "cloudflare";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Read the pre-built Worker bundle.
+ * Expects the worker package to have been built first (`pnpm --filter @obsidian-r2-sync/worker build`).
+ */
+export function readWorkerBundle(bundlePath?: string): string {
+  const path = bundlePath ?? resolve(__dirname, "../../../worker/dist/index.js");
+  try {
+    return readFileSync(path, "utf-8");
+  } catch {
+    throw new Error(
+      `Worker bundle not found at ${path}. Run "pnpm --filter @obsidian-r2-sync/worker build" first.`,
+    );
+  }
+}
 
 export interface ProvisioningConfig {
   apiToken: string;
