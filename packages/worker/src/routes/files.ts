@@ -6,19 +6,33 @@ import type { Env } from "../index.js";
 export const fileRoutes = new Hono<Env>();
 
 /**
+ * Validate that a vault path is safe (no traversal, no access to internal keys).
+ */
+function validatePath(path: string): string | null {
+  if (!path || typeof path !== "string") {
+    return "path is required";
+  }
+  if (path.includes("..") || path.startsWith("/") || path.startsWith("\\")) {
+    return "invalid path: directory traversal not allowed";
+  }
+  if (path.startsWith(".obsidian-r2-sync/")) {
+    return "invalid path: internal keys are not accessible";
+  }
+  return null;
+}
+
+/**
  * Generate a presigned URL for uploading a file to R2.
  */
 fileRoutes.post("/upload-url", async (c) => {
-  const { path, hash } = await c.req.json<{ path: string; hash: string }>();
+  const { path } = await c.req.json<{ path: string; hash?: string }>();
 
-  if (!path) {
-    return c.json({ error: "path is required" }, 400);
+  const pathError = validatePath(path);
+  if (pathError) {
+    return c.json({ error: pathError }, 400);
   }
 
   const r2Key = `${FILES_PREFIX}${path}`;
-
-  // For presigned URLs we need the S3-compatible API
-  // The Worker generates the URL; the client uploads directly to R2
   const url = await generatePresignedUrl(c.env, r2Key, "PUT");
 
   return c.json({
@@ -33,8 +47,9 @@ fileRoutes.post("/upload-url", async (c) => {
 fileRoutes.post("/download-url", async (c) => {
   const { path } = await c.req.json<{ path: string }>();
 
-  if (!path) {
-    return c.json({ error: "path is required" }, 400);
+  const pathError = validatePath(path);
+  if (pathError) {
+    return c.json({ error: pathError }, 400);
   }
 
   const r2Key = `${FILES_PREFIX}${path}`;
@@ -56,6 +71,14 @@ fileRoutes.post("/delete", async (c) => {
     return c.json({ error: "paths array is required" }, 400);
   }
 
+  // Validate all paths
+  for (const path of paths) {
+    const pathError = validatePath(path);
+    if (pathError) {
+      return c.json({ error: `${pathError} (${path})` }, 400);
+    }
+  }
+
   const keys = paths.map((p) => `${FILES_PREFIX}${p}`);
 
   // R2 supports deleting multiple objects at once
@@ -73,18 +96,14 @@ async function generatePresignedUrl(
   key: string,
   method: "GET" | "PUT",
 ): Promise<string> {
-  // These credentials come from CF_ACCESS_KEY_ID and CF_SECRET_ACCESS_KEY
-  // environment variables, set via wrangler secrets
   const client = new AwsClient({
-    accessKeyId: (env as Record<string, string>).CF_ACCESS_KEY_ID,
-    secretAccessKey: (env as Record<string, string>).CF_SECRET_ACCESS_KEY,
+    accessKeyId: env.CF_ACCESS_KEY_ID,
+    secretAccessKey: env.CF_SECRET_ACCESS_KEY,
     service: "s3",
     region: "auto",
   });
 
-  const accountId = (env as Record<string, string>).CF_ACCOUNT_ID;
-  const bucketName = "obsidian-vault-sync";
-  const endpoint = `https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`;
+  const endpoint = `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com/${env.BUCKET_NAME}/${key}?X-Amz-Expires=${PRESIGNED_URL_EXPIRY}`;
 
   const signed = await client.sign(
     new Request(endpoint, { method }),

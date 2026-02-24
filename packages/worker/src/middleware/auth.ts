@@ -52,6 +52,6 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
   }
 
   // Attach device ID to context for downstream use
-  c.set("deviceId" as never, deviceId);
+  c.set("deviceId", deviceId);
   await next();
 });

@@ -9,6 +9,13 @@ export type Env = {
   Bindings: {
     BUCKET: R2Bucket;
     AUTH_SECRET: string;
+    CF_ACCOUNT_ID: string;
+    CF_ACCESS_KEY_ID: string;
+    CF_SECRET_ACCESS_KEY: string;
+    BUCKET_NAME: string;
+  };
+  Variables: {
+    deviceId: string;
   };
 };
 
