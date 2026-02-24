@@ -7,7 +7,8 @@
     "build": "node esbuild.config.mjs production",
     "dev": "node esbuild.config.mjs",
     "clean": "rm -rf main.js *.map .turbo",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@obsidian-r2-sync/shared": "workspace:*",
