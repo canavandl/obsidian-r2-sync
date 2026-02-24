@@ -52,17 +52,36 @@ export const setupCommand = new Command("setup")
       process.exit(1);
     }
 
-    // Step 4: Generate auth secret
+    // Step 4: Create R2 API token for presigned URLs
+    const r2TokenSpinner = ora("Creating R2 API token for presigned URLs...").start();
+    let r2AccessKeyId: string | undefined;
+    let r2SecretAccessKey: string | undefined;
+    try {
+      const r2Creds = await cf.createR2Token(bucketName);
+      r2AccessKeyId = r2Creds.accessKeyId;
+      r2SecretAccessKey = r2Creds.secretAccessKey;
+      r2TokenSpinner.succeed("R2 API token created");
+    } catch (error) {
+      r2TokenSpinner.fail("Failed to create R2 API token");
+      console.error(chalk.red(`  ${(error as Error).message}`));
+      console.error(chalk.dim("  You can create one manually in the Cloudflare dashboard under R2 → Manage R2 API Tokens"));
+      // Don't exit — Worker can still be deployed, presigned URLs just won't work
+    }
+
+    // Step 5: Generate auth secret
     const authSecret = crypto.randomUUID() + crypto.randomUUID();
 
-    // Step 5: Deploy Worker
+    // Step 6: Deploy Worker
     const workerName = await promptWorkerName();
     const workerSpinner = ora(`Deploying Worker "${workerName}"...`).start();
     try {
       const bundle = readWorkerBundle();
       const { url } = await cf.deployWorker(workerName, bundle, {
         r2BucketName: bucketName,
-        authSecret: authSecret,
+        authSecret,
+        cfAccountId: accountId,
+        cfAccessKeyId: r2AccessKeyId,
+        cfSecretAccessKey: r2SecretAccessKey,
       });
       workerSpinner.succeed(`Worker deployed at ${chalk.cyan(url)}`);
     } catch (error) {
@@ -72,7 +91,7 @@ export const setupCommand = new Command("setup")
       // Don't exit — continue to generate the device token
     }
 
-    // Step 6: Generate first device token
+    // Step 7: Generate first device token
     const deviceId = await promptDeviceId();
     const token = await CloudflareClient.generateToken(authSecret, deviceId);
 

@@ -9,8 +9,8 @@ bucket_name = "obsidian-vault-sync"
 [vars]
 BUCKET_NAME = "obsidian-vault-sync"
 
-# These must be set via `wrangler secret put <NAME>`:
+# The following secrets are set automatically by `obsidian-r2-sync setup`:
 #   AUTH_SECRET          — HMAC secret for device token validation
 #   CF_ACCOUNT_ID        — Cloudflare account ID (for presigned URL generation)
-#   CF_ACCESS_KEY_ID     — R2 API token access key ID
-#   CF_SECRET_ACCESS_KEY — R2 API token secret access key
+#   CF_ACCESS_KEY_ID     — R2 API token access key ID (auto-generated)
+#   CF_SECRET_ACCESS_KEY — R2 API token secret access key (auto-generated)

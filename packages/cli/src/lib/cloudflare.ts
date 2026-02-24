@@ -1,4 +1,5 @@
 import Cloudflare from "cloudflare";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,6 +84,83 @@ export class CloudflareClient {
   }
 
   /**
+   * Create an R2-scoped API token and derive S3 credentials from it.
+   *
+   * The Cloudflare API token's `id` becomes the Access Key ID,
+   * and `SHA-256(token value)` becomes the Secret Access Key.
+   */
+  async createR2Token(bucketName: string): Promise<{
+    accessKeyId: string;
+    secretAccessKey: string;
+    tokenId: string;
+  }> {
+    // Step 1: Find the R2 "Object Read & Write" permission group ID
+    const permissionGroups = [];
+    for await (const group of this.client.user.tokens.permissionGroups.list()) {
+      permissionGroups.push(group);
+    }
+
+    // Look for R2 object read/write permission
+    const r2WriteGroup = permissionGroups.find(
+      (g) => {
+        const name = (g as Record<string, unknown>).name as string | undefined;
+        return name &&
+          (name.includes("Workers R2 Storage Bucket Item Write") ||
+           name.includes("R2") && name.includes("Write"));
+      },
+    );
+
+    const r2ReadGroup = permissionGroups.find(
+      (g) => {
+        const name = (g as Record<string, unknown>).name as string | undefined;
+        return name &&
+          (name.includes("Workers R2 Storage Bucket Item Read") ||
+           name.includes("R2") && name.includes("Read") && !name.includes("Write"));
+      },
+    );
+
+    if (!r2WriteGroup?.id) {
+      throw new Error(
+        "Could not find R2 write permission group. " +
+        "Ensure your API token has permission to create tokens.",
+      );
+    }
+
+    // Step 2: Create the token with R2 bucket-scoped permissions
+    const policyPermissions: Array<{ id: string }> = [{ id: r2WriteGroup.id }];
+    if (r2ReadGroup?.id && r2ReadGroup.id !== r2WriteGroup.id) {
+      policyPermissions.push({ id: r2ReadGroup.id });
+    }
+
+    const token = await this.client.user.tokens.create({
+      name: `obsidian-r2-sync-${bucketName}`,
+      policies: [
+        {
+          effect: "allow",
+          permission_groups: policyPermissions,
+          resources: {
+            [`com.cloudflare.edge.r2.bucket.${this.accountId}_default_${bucketName}`]: "*",
+          },
+        },
+      ],
+    });
+
+    const tokenValue = (token as unknown as { value: string }).value;
+    const tokenId = token.id as string;
+
+    // Step 3: Derive S3 credentials
+    // Access Key ID = token ID
+    // Secret Access Key = SHA-256(token value)
+    const secretAccessKey = createHash("sha256").update(tokenValue).digest("hex");
+
+    return {
+      accessKeyId: tokenId,
+      secretAccessKey,
+      tokenId,
+    };
+  }
+
+  /**
    * Deploy a Worker script.
    * For MVP, we upload a pre-built worker bundle.
    */
@@ -92,26 +170,46 @@ export class CloudflareClient {
     bindings: {
       r2BucketName: string;
       authSecret: string;
+      cfAccountId?: string;
+      cfAccessKeyId?: string;
+      cfSecretAccessKey?: string;
     },
   ): Promise<{ url: string }> {
+    // Build the bindings list
+    // Using `as never` to work around the SDK's strict union types for bindings
+    const workerBindings = [
+      {
+        type: "r2_bucket" as const,
+        name: "BUCKET",
+        bucket_name: bindings.r2BucketName,
+      },
+      {
+        type: "secret_text" as const,
+        name: "AUTH_SECRET",
+        text: bindings.authSecret,
+      },
+      {
+        type: "plain_text" as const,
+        name: "BUCKET_NAME",
+        text: bindings.r2BucketName,
+      },
+      ...(bindings.cfAccountId
+        ? [{ type: "secret_text" as const, name: "CF_ACCOUNT_ID", text: bindings.cfAccountId }]
+        : []),
+      ...(bindings.cfAccessKeyId
+        ? [{ type: "secret_text" as const, name: "CF_ACCESS_KEY_ID", text: bindings.cfAccessKeyId }]
+        : []),
+      ...(bindings.cfSecretAccessKey
+        ? [{ type: "secret_text" as const, name: "CF_SECRET_ACCESS_KEY", text: bindings.cfSecretAccessKey }]
+        : []),
+    ];
+
     // Upload the worker script
-    // The Cloudflare SDK handles the multipart form upload
     await this.client.workers.scripts.update(workerName, {
       account_id: this.accountId,
       metadata: {
         main_module: "index.js",
-        bindings: [
-          {
-            type: "r2_bucket",
-            name: "BUCKET",
-            bucket_name: bindings.r2BucketName,
-          },
-          {
-            type: "secret_text",
-            name: "AUTH_SECRET",
-            text: bindings.authSecret,
-          },
-        ],
+        bindings: workerBindings as never,
       },
       files: {
         "index.js": new File([scriptContent], "index.js", { type: "application/javascript" }),
