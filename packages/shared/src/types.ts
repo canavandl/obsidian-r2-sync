@@ -33,10 +33,8 @@ export interface SyncManifest {
 export interface SyncConfig {
   /** Worker API endpoint URL */
   endpoint: string;
-  /** Bearer auth token for this device */
+  /** Bearer auth token for this device (format: "deviceId:hmacHex") */
   token: string;
-  /** Unique device identifier */
-  deviceId: string;
   /** Sync interval in seconds (0 = manual only) */
   syncInterval: number;
   /** Conflict resolution strategy */
@@ -105,4 +103,14 @@ export interface HealthResponse {
 export interface ManifestResponse {
   manifest: SyncManifest;
   etag: string;
+}
+
+/**
+ * Extract the device ID from an auth token.
+ * Token format: "deviceId:hmacHex"
+ */
+export function parseDeviceId(token: string): string {
+  const colonIndex = token.indexOf(":");
+  if (colonIndex === -1) return "";
+  return token.substring(0, colonIndex);
 }

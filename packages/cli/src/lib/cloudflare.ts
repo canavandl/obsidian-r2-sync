@@ -44,9 +44,11 @@ export class CloudflareClient {
    * List available accounts to auto-detect account ID.
    */
   async listAccounts(): Promise<Array<{ id: string; name: string }>> {
-    const accounts = await this.client.accounts.list();
+    // Use a single page request instead of the auto-paginating iterator,
+    // which has a bug where it infinitely re-fetches the same page.
+    const page = await this.client.accounts.list();
     const result: Array<{ id: string; name: string }> = [];
-    for await (const account of accounts) {
+    for (const account of page.result) {
       result.push({ id: account.id, name: account.name });
     }
     return result;
@@ -86,6 +88,10 @@ export class CloudflareClient {
   /**
    * Create an R2-scoped API token and derive S3 credentials from it.
    *
+   * Uses the account-level token API (POST /accounts/{id}/tokens) instead of
+   * the user-level API, so it only requires normal account permissions — no
+   * special "User API Tokens: Edit" permission needed.
+   *
    * The Cloudflare API token's `id` becomes the Access Key ID,
    * and `SHA-256(token value)` becomes the Secret Access Key.
    */
@@ -94,35 +100,31 @@ export class CloudflareClient {
     secretAccessKey: string;
     tokenId: string;
   }> {
-    // Step 1: Find the R2 "Object Read & Write" permission group ID
-    const permissionGroups = [];
-    for await (const group of this.client.user.tokens.permissionGroups.list()) {
-      permissionGroups.push(group);
-    }
+    // Step 1: Find the R2 permission group IDs via the account-level endpoint.
+    // Use .result directly to avoid the SDK's auto-paginating iterator bug.
+    const permissionGroupsPage = await this.client.accounts.tokens.permissionGroups.list({
+      account_id: this.accountId,
+    });
+    const permissionGroups = [...permissionGroupsPage.result];
 
-    // Look for R2 object read/write permission
+    // Look for R2 object read/write permissions (scoped to r2.bucket)
     const r2WriteGroup = permissionGroups.find(
-      (g) => {
-        const name = (g as Record<string, unknown>).name as string | undefined;
-        return name &&
-          (name.includes("Workers R2 Storage Bucket Item Write") ||
-           name.includes("R2") && name.includes("Write"));
-      },
+      (g) => g.name?.includes("Workers R2 Storage Bucket Item Write"),
     );
 
     const r2ReadGroup = permissionGroups.find(
-      (g) => {
-        const name = (g as Record<string, unknown>).name as string | undefined;
-        return name &&
-          (name.includes("Workers R2 Storage Bucket Item Read") ||
-           name.includes("R2") && name.includes("Read") && !name.includes("Write"));
-      },
+      (g) => g.name?.includes("Workers R2 Storage Bucket Item Read") &&
+             !g.name?.includes("Write"),
     );
 
     if (!r2WriteGroup?.id) {
       throw new Error(
         "Could not find R2 write permission group. " +
-        "Ensure your API token has permission to create tokens.",
+        "Available groups: " +
+        permissionGroups
+          .filter((g) => g.name?.includes("R2"))
+          .map((g) => g.name)
+          .join(", "),
       );
     }
 
@@ -132,7 +134,8 @@ export class CloudflareClient {
       policyPermissions.push({ id: r2ReadGroup.id });
     }
 
-    const token = await this.client.user.tokens.create({
+    const token = await this.client.accounts.tokens.create({
+      account_id: this.accountId,
       name: `obsidian-r2-sync-${bucketName}`,
       policies: [
         {
@@ -204,21 +207,33 @@ export class CloudflareClient {
         : []),
     ];
 
-    // Upload the worker script
+    // Upload the worker script as an ES module
     await this.client.workers.scripts.update(workerName, {
       account_id: this.accountId,
       metadata: {
         main_module: "index.js",
+        compatibility_date: "2025-02-01",
         bindings: workerBindings as never,
       },
       files: {
-        "index.js": new File([scriptContent], "index.js", { type: "application/javascript" }),
+        "index.js": new File([scriptContent], "index.js", {
+          type: "application/javascript+module",
+        }),
       },
     });
 
     // Enable the workers.dev route
-    const subdomain = `${workerName}.${this.accountId.slice(0, 8)}.workers.dev`;
-    return { url: `https://${subdomain}` };
+    await this.client.workers.scripts.subdomain.create(workerName, {
+      account_id: this.accountId,
+      enabled: true,
+    });
+
+    // Get the account's workers.dev subdomain to build the URL
+    const subdomainInfo = await this.client.workers.accountSettings.get({
+      account_id: this.accountId,
+    });
+    const accountSubdomain = (subdomainInfo as unknown as { subdomain: string }).subdomain;
+    return { url: `https://${workerName}.${accountSubdomain}.workers.dev` };
   }
 
   /**

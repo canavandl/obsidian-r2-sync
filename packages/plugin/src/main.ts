@@ -1,6 +1,6 @@
 import { Notice, Plugin } from "obsidian";
 import type { SyncConfig, SyncManifest } from "@obsidian-r2-sync/shared";
-import { DEFAULT_SYNC_INTERVAL } from "@obsidian-r2-sync/shared";
+import { DEFAULT_SYNC_INTERVAL, parseDeviceId } from "@obsidian-r2-sync/shared";
 import { SyncEngine } from "./sync/engine.js";
 import { ApiClient } from "./api/client.js";
 import { R2SyncSettingsTab } from "./ui/settings-tab.js";
@@ -16,7 +16,6 @@ interface PluginData {
 const DEFAULT_SETTINGS: SyncConfig = {
   endpoint: "",
   token: "",
-  deviceId: "",
   syncInterval: DEFAULT_SYNC_INTERVAL,
   conflictStrategy: "ask",
   excludePatterns: [
@@ -36,6 +35,11 @@ export default class R2SyncPlugin extends Plugin {
   private statusBar!: StatusBar;
   private syncIntervalId: number | null = null;
   private isSyncing = false;
+
+  /** Device ID derived from the auth token (format: "deviceId:hmacHex") */
+  get deviceId(): string {
+    return parseDeviceId(this.settings.token);
+  }
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -78,12 +82,6 @@ export default class R2SyncPlugin extends Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data?.settings);
     this.baseManifest = data?.baseManifest ?? null;
     this.lastEtag = data?.lastEtag ?? null;
-
-    // Generate device ID if not set
-    if (!this.settings.deviceId) {
-      this.settings.deviceId = this.generateDeviceId();
-      await this.saveSettings();
-    }
   }
 
   async saveSettings(): Promise<void> {
@@ -93,6 +91,9 @@ export default class R2SyncPlugin extends Plugin {
       lastEtag: this.lastEtag,
     };
     await this.saveData(data);
+
+    // Keep the API client in sync with the latest settings
+    this.apiClient.updateConfig(this.settings.endpoint, this.settings.token);
   }
 
   async triggerSync(forceFullSync = false): Promise<void> {
@@ -140,12 +141,4 @@ export default class R2SyncPlugin extends Plugin {
     }
   }
 
-  private generateDeviceId(): string {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let id = "device-";
-    for (let i = 0; i < 8; i++) {
-      id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
-  }
 }

@@ -207,7 +207,14 @@ POST /files/delete        → { paths: string[] } → delete files from R2
 - Compare actual R2 contents against manifest, detect and fix drift
 - Can be run manually via CLI or as a plugin command
 
-### 5.7 Sync-on-file-open with brief blocking modal
+### 5.7 Revisit exclude patterns
+- Audit the default exclude list — are we excluding too much or too little?
+- Consider whether all `.obsidian/**` should be excluded by default (themes, snippets, hotkeys, etc. are device-specific)
+- Evaluate whether plugin settings (`data.json` files) should sync or not — some users want consistent plugin config across devices
+- Investigate using `.gitignore`-style syntax instead of custom glob-to-regex conversion
+- Consider a `.r2syncignore` file in the vault root as an alternative/complement to the settings UI
+
+### 5.8 Sync-on-file-open with brief blocking modal
 - Explore showing a brief modal/overlay ("Syncing latest version...") when opening a file that may have remote changes
 - On file open: `HEAD /manifest` to check ETag → if changed, check if this file has a newer remote version → download before user edits
 - Modal blocks editing for the duration of the check (~300-700ms typical)

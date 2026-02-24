@@ -62,9 +62,13 @@ export const setupCommand = new Command("setup")
       r2SecretAccessKey = r2Creds.secretAccessKey;
       r2TokenSpinner.succeed("R2 API token created");
     } catch (error) {
-      r2TokenSpinner.fail("Failed to create R2 API token");
+      r2TokenSpinner.fail("Failed to create R2 API token (presigned URLs won't work until this is configured)");
       console.error(chalk.red(`  ${(error as Error).message}`));
-      console.error(chalk.dim("  You can create one manually in the Cloudflare dashboard under R2 → Manage R2 API Tokens"));
+      console.error(chalk.dim("  Ensure your API token has 'Account / Account API Tokens: Edit' permission."));
+      console.error(chalk.dim("  Or create an R2 API token manually:"));
+      console.error(chalk.dim("    1. Go to https://dash.cloudflare.com → R2 → Manage R2 API Tokens"));
+      console.error(chalk.dim("    2. Create a token with 'Object Read & Write' for your bucket"));
+      console.error(chalk.dim("    3. Run 'pnpm cli deploy' with the R2 credentials to update the Worker"));
       // Don't exit — Worker can still be deployed, presigned URLs just won't work
     }
 
@@ -73,6 +77,7 @@ export const setupCommand = new Command("setup")
 
     // Step 6: Deploy Worker
     const workerName = await promptWorkerName();
+    let workerUrl = "";
     const workerSpinner = ora(`Deploying Worker "${workerName}"...`).start();
     try {
       const bundle = readWorkerBundle();
@@ -83,6 +88,7 @@ export const setupCommand = new Command("setup")
         cfAccessKeyId: r2AccessKeyId,
         cfSecretAccessKey: r2SecretAccessKey,
       });
+      workerUrl = url;
       workerSpinner.succeed(`Worker deployed at ${chalk.cyan(url)}`);
     } catch (error) {
       workerSpinner.fail("Failed to deploy Worker");
@@ -110,11 +116,10 @@ export const setupCommand = new Command("setup")
     // Output results
     console.log(chalk.bold("\n✅ Setup complete!\n"));
     console.log(chalk.dim("Add these to your Obsidian plugin settings:\n"));
-    console.log(`  ${chalk.cyan("Endpoint:")}  https://${workerName}.${accountId.slice(0, 8)}.workers.dev`);
-    console.log(`  ${chalk.cyan("Token:")}     ${token}`);
-    console.log(`  ${chalk.cyan("Device ID:")} ${deviceId}`);
+    console.log(`  ${chalk.cyan("Endpoint:")} ${workerUrl || `https://${workerName}.<your-subdomain>.workers.dev`}`);
+    console.log(`  ${chalk.cyan("Token:")}    ${token}`);
     console.log(
       chalk.dim("\n⚠️  Save the auth secret — you'll need it to add more devices:"),
     );
-    console.log(`  ${chalk.cyan("Secret:")}    ${authSecret}\n`);
+    console.log(`  ${chalk.cyan("Secret:")}   ${authSecret}\n`);
   });

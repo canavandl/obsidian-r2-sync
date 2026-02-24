@@ -1,4 +1,4 @@
-import type { App, TFile } from "obsidian";
+import { requestUrl, type App, type TFile } from "obsidian";
 import type {
   ConflictEntry,
   DiffResult,
@@ -107,7 +107,7 @@ export class SyncEngine {
     const updatedManifest: SyncManifest = {
       files: { ...remoteManifest.files },
       lastUpdated: new Date().toISOString(),
-      lastUpdatedBy: this.plugin.settings.deviceId,
+      lastUpdatedBy: this.plugin.deviceId,
     };
 
     // Apply uploads
@@ -189,8 +189,8 @@ export class SyncEngine {
     let remoteContent: string;
     try {
       const { url } = await this.api.getDownloadUrl(conflict.path);
-      const response = await fetch(url);
-      remoteContent = await response.text();
+      const response = await requestUrl({ url, method: "GET" });
+      remoteContent = response.text;
     } catch {
       remoteContent = "(could not fetch remote content)";
     }
@@ -240,8 +240,8 @@ export class SyncEngine {
 
     // Get remote content
     const { url } = await this.api.getDownloadUrl(conflict.path);
-    const remoteResponse = await fetch(url);
-    const remoteContent = await remoteResponse.text();
+    const remoteResponse = await requestUrl({ url, method: "GET" });
+    const remoteContent = remoteResponse.text;
 
     // Get base content if available
     let baseContent = "";
@@ -269,7 +269,7 @@ export class SyncEngine {
       hash,
       mtime: Date.now(),
       size: mergedContent.byteLength,
-      lastModifiedBy: this.plugin.settings.deviceId,
+      lastModifiedBy: this.plugin.deviceId,
     };
 
     // Upload the merged version
@@ -293,14 +293,14 @@ export class SyncEngine {
         hash,
         mtime: file.stat.mtime,
         size: file.stat.size,
-        lastModifiedBy: this.plugin.settings.deviceId,
+        lastModifiedBy: this.plugin.deviceId,
       };
     }
 
     return {
       files,
       lastUpdated: new Date().toISOString(),
-      lastUpdatedBy: this.plugin.settings.deviceId,
+      lastUpdatedBy: this.plugin.deviceId,
     };
   }
 
@@ -327,10 +327,10 @@ export class SyncEngine {
 
   private async downloadFile(entry: FileEntry): Promise<void> {
     const { url } = await this.api.getDownloadUrl(entry.path);
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Failed to download ${entry.path}`);
+    const response = await requestUrl({ url, method: "GET" });
+    if (response.status >= 400) throw new Error(`Failed to download ${entry.path}`);
 
-    const content = await response.arrayBuffer();
+    const content = response.arrayBuffer;
 
     // Create parent directories if needed
     const dir = entry.path.substring(0, entry.path.lastIndexOf("/"));
@@ -353,11 +353,12 @@ export class SyncEngine {
     const content = await this.app.vault.readBinary(file as TFile);
     const { url } = await this.api.getUploadUrl(entry.path, entry.hash);
 
-    const response = await fetch(url, {
+    const response = await requestUrl({
+      url,
       method: "PUT",
       body: content,
     });
-    if (!response.ok) throw new Error(`Failed to upload ${entry.path}`);
+    if (response.status >= 400) throw new Error(`Failed to upload ${entry.path}`);
   }
 
   private async deleteLocalFile(path: string): Promise<void> {

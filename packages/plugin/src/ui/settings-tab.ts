@@ -42,15 +42,6 @@ export class R2SyncSettingsTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Device ID")
-      .setDesc("Unique identifier for this device")
-      .addText((text) =>
-        text
-          .setValue(this.plugin.settings.deviceId)
-          .setDisabled(true),
-      );
-
-    new Setting(containerEl)
       .setName("Sync interval (seconds)")
       .setDesc("How often to sync automatically. Set to 0 for manual-only sync.")
       .addText((text) =>
