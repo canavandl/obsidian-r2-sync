@@ -79,7 +79,7 @@ At the end, it will output:
 
 #### Manual installation
 
-Download `main.js`, `manifest.json`, and `styles.css` (if present) from the [latest GitHub Release](https://github.com/canavandl/obsidian-r2-sync/releases/latest) and place them in your vault at `.obsidian/plugins/obsidian-r2-sync/`.
+Download `main.js`, `manifest.json`, and `styles.css` (if present) from the [latest GitHub Release](https://github.com/canavandl/obsidian-r2-sync/releases/latest) and place them in your vault at `.obsidian/plugins/r2-vault-sync/`.
 
 Then in Obsidian:
 1. Go to **Settings > Community Plugins**

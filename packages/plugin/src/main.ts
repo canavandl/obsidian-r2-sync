@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS: SyncConfig = {
   syncInterval: DEFAULT_SYNC_INTERVAL,
   conflictStrategy: "ask",
   excludePatterns: [
-    ".obsidian/plugins/obsidian-r2-sync/**",
+    ".obsidian/plugins/r2-vault-sync/**",
     ".obsidian/workspace.json",
     ".obsidian/workspace-mobile.json",
   ],
