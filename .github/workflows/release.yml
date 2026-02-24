@@ -104,6 +104,9 @@ jobs:
   publish-cli:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -116,6 +119,9 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - run: pnpm install --frozen-lockfile
+
+      # Trusted publishing requires npm >= 11.5.1
+      - run: npm install -g npm@latest
 
       # Restore pre-built CLI dist
       - uses: actions/download-artifact@v4
@@ -131,6 +137,4 @@ jobs:
 
       - name: Publish CLI to npm
         working-directory: packages/cli
-        run: pnpm publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
