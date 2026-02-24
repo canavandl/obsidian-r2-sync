@@ -86,6 +86,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: plugin-assets
@@ -95,9 +97,17 @@ jobs:
         id: version
         run: echo "number=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      # Obsidian requires a release tagged with the exact version (no v prefix).
+      # Create a bare version tag so the community plugin checker can find it.
+      - name: Create version tag
+        run: |
+          git tag "${{ steps.version.outputs.number }}" "${{ github.ref_name }}"
+          git push origin "${{ steps.version.outputs.number }}"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag: ${{ steps.version.outputs.number }}
           name: ${{ steps.version.outputs.number }}
           files: |
             release-assets/main.js

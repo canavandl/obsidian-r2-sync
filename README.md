@@ -167,7 +167,7 @@ git push origin main --tags
 The `v*` tag triggers the [release workflow](.github/workflows/release.yml), which:
 1. Verifies version consistency across all packages
 2. Builds and tests everything
-3. Creates a GitHub Release with the Obsidian plugin assets
+3. Creates a GitHub Release tagged with the bare version number (e.g., `0.2.0`) for Obsidian's community plugin checker
 4. Publishes the CLI to npm as [`@yaop/obsidian-r2-sync`](https://www.npmjs.com/package/@yaop/obsidian-r2-sync)
 
 ## Architecture
