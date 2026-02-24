@@ -55,25 +55,26 @@ export class ConflictModal extends Modal {
     const remotePre = contentEl.createEl("div", { cls: "conflict-diff" });
     remotePre.setText(this.remoteContent.slice(0, 2000));
 
-    // Action buttons
+    // Action buttons — listeners are cleaned up when onClose() calls contentEl.empty(),
+    // which removes the DOM nodes and allows the listeners to be garbage collected.
     const actions = contentEl.createEl("div", { cls: "conflict-actions" });
 
     const keepLocalBtn = actions.createEl("button", { text: "Keep Local" });
-    this.registerDomEvent(keepLocalBtn, "click", () => {
+    keepLocalBtn.addEventListener("click", () => {
       this.resolved = true;
       this.resolvePromise("keep-local");
       this.close();
     });
 
     const keepRemoteBtn = actions.createEl("button", { text: "Keep Remote" });
-    this.registerDomEvent(keepRemoteBtn, "click", () => {
+    keepRemoteBtn.addEventListener("click", () => {
       this.resolved = true;
       this.resolvePromise("keep-remote");
       this.close();
     });
 
     const mergeBtn = actions.createEl("button", { text: "Auto-merge", cls: "mod-cta" });
-    this.registerDomEvent(mergeBtn, "click", () => {
+    mergeBtn.addEventListener("click", () => {
       this.resolved = true;
       this.resolvePromise("merge");
       this.close();
