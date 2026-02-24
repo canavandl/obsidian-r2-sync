@@ -1,4 +1,4 @@
-export const PACKAGE_VERSION = "0.1.0";
+export const PACKAGE_VERSION = "0.1.1";
 
 /** R2 key prefix for the sync manifest */
 export const MANIFEST_KEY = ".obsidian-r2-sync/manifest.json";

@@ -3,6 +3,7 @@ import type R2SyncPlugin from "../main.js";
 
 export class R2SyncSettingsTab extends PluginSettingTab {
   plugin: R2SyncPlugin;
+  private resetTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(app: App, plugin: R2SyncPlugin) {
     super(app, plugin);
@@ -11,6 +12,10 @@ export class R2SyncSettingsTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
+    if (this.resetTimer) {
+      clearTimeout(this.resetTimer);
+      this.resetTimer = null;
+    }
     containerEl.empty();
 
     containerEl.createEl("h2", { text: "R2 Vault Sync Settings" });
@@ -119,12 +124,20 @@ export class R2SyncSettingsTab extends PluginSettingTab {
             button.setButtonText("✗ Failed");
             console.error("Connection test failed:", e);
           } finally {
-            setTimeout(() => {
+            this.resetTimer = setTimeout(() => {
+              this.resetTimer = null;
               button.setButtonText("Test");
               button.setDisabled(false);
             }, 3000);
           }
         }),
       );
+  }
+
+  hide(): void {
+    if (this.resetTimer) {
+      clearTimeout(this.resetTimer);
+      this.resetTimer = null;
+    }
   }
 }

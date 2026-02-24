@@ -1,6 +1,6 @@
 {
   "name": "@yaop/obsidian-r2-sync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "CLI for provisioning Obsidian R2 Vault Sync infrastructure on Cloudflare",
   "license": "MIT",

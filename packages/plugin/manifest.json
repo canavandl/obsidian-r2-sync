@@ -1,7 +1,7 @@
 {
 	"id": "r2-vault-sync",
 	"name": "R2 Vault Sync",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"minAppVersion": "1.0.0",
 	"description": "Sync your vault across devices via Cloudflare R2 storage.",
 	"author": "canavandl",

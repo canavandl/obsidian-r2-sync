@@ -59,21 +59,21 @@ export class ConflictModal extends Modal {
     const actions = contentEl.createEl("div", { cls: "conflict-actions" });
 
     const keepLocalBtn = actions.createEl("button", { text: "Keep Local" });
-    keepLocalBtn.addEventListener("click", () => {
+    this.registerDomEvent(keepLocalBtn, "click", () => {
       this.resolved = true;
       this.resolvePromise("keep-local");
       this.close();
     });
 
     const keepRemoteBtn = actions.createEl("button", { text: "Keep Remote" });
-    keepRemoteBtn.addEventListener("click", () => {
+    this.registerDomEvent(keepRemoteBtn, "click", () => {
       this.resolved = true;
       this.resolvePromise("keep-remote");
       this.close();
     });
 
     const mergeBtn = actions.createEl("button", { text: "Auto-merge", cls: "mod-cta" });
-    mergeBtn.addEventListener("click", () => {
+    this.registerDomEvent(mergeBtn, "click", () => {
       this.resolved = true;
       this.resolvePromise("merge");
       this.close();

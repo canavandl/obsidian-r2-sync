@@ -214,7 +214,21 @@ POST /files/delete        → { paths: string[] } → delete files from R2
 - Investigate using `.gitignore`-style syntax instead of custom glob-to-regex conversion
 - Consider a `.r2syncignore` file in the vault root as an alternative/complement to the settings UI
 
-### 5.8 Sync-on-file-open with brief blocking modal
+### 5.8 Evaluate R2 object versioning
+- R2 supports object versioning at the bucket level — when enabled, every PUT creates a new version rather than overwriting
+- Investigate enabling versioning on the bucket via `PutBucketVersioning` (S3-compatible API)
+- Key benefits:
+  - **File history / undo**: users could restore previous versions of any synced file
+  - **Safety net**: accidental deletes or bad merges are recoverable without external backups
+  - **Simpler conflict resolution**: instead of needing the base version for three-way merge, we could fetch the common ancestor version from R2's version history
+- Key concerns:
+  - **Storage costs**: every edit creates a new version; need lifecycle rules to expire old versions (e.g., keep last N versions or versions from last 30 days)
+  - **Manifest complexity**: do we store version IDs in the manifest? Or rely on R2's version list API at conflict time?
+  - **Delete semantics**: with versioning, DELETE creates a "delete marker" — need to understand implications for our delete sync flow
+- Potential CLI additions: `pnpm cli enable-versioning`, `pnpm cli file-history <path>`
+- Potential plugin additions: "View file history" command, "Restore version" UI
+
+### 5.9 Sync-on-file-open with brief blocking modal
 - Explore showing a brief modal/overlay ("Syncing latest version...") when opening a file that may have remote changes
 - On file open: `HEAD /manifest` to check ETag → if changed, check if this file has a newer remote version → download before user edits
 - Modal blocks editing for the duration of the check (~300-700ms typical)
