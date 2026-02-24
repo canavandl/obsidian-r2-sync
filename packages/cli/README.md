@@ -1,4 +1,4 @@
-# obsidian-r2-sync
+# @yaop/obsidian-r2-sync
 
 CLI for provisioning [Obsidian R2 Vault Sync](https://github.com/canavandl/obsidian-r2-sync) infrastructure on Cloudflare.
 
@@ -18,13 +18,13 @@ See the [full setup guide](https://github.com/canavandl/obsidian-r2-sync#setup-g
 ## Installation
 
 ```bash
-npx obsidian-r2-sync setup
+npx @yaop/obsidian-r2-sync setup
 ```
 
 Or install globally:
 
 ```bash
-npm install -g obsidian-r2-sync
+npm install -g @yaop/obsidian-r2-sync
 obsidian-r2-sync setup
 ```
 
@@ -35,7 +35,7 @@ obsidian-r2-sync setup
 Full provisioning wizard. Creates an R2 bucket, deploys the Cloudflare Worker, and generates your first device token.
 
 ```bash
-npx obsidian-r2-sync setup
+npx @yaop/obsidian-r2-sync setup
 ```
 
 The wizard will output:
@@ -48,7 +48,7 @@ The wizard will output:
 Redeploy the Cloudflare Worker (e.g. after updating to a new version).
 
 ```bash
-npx obsidian-r2-sync deploy
+npx @yaop/obsidian-r2-sync deploy
 ```
 
 ### `add-device`
@@ -56,7 +56,7 @@ npx obsidian-r2-sync deploy
 Generate an auth token for an additional device.
 
 ```bash
-npx obsidian-r2-sync add-device
+npx @yaop/obsidian-r2-sync add-device
 ```
 
 ### `status`
@@ -64,7 +64,7 @@ npx obsidian-r2-sync add-device
 Check the health of your deployed Worker.
 
 ```bash
-npx obsidian-r2-sync status
+npx @yaop/obsidian-r2-sync status
 ```
 
 ### `rotate-secret`
@@ -72,7 +72,7 @@ npx obsidian-r2-sync status
 Generate a new auth secret and redeploy the Worker. **This invalidates all existing device tokens** — you'll need to run `add-device` again for each device.
 
 ```bash
-npx obsidian-r2-sync rotate-secret
+npx @yaop/obsidian-r2-sync rotate-secret
 ```
 
 ### `teardown`
@@ -80,7 +80,7 @@ npx obsidian-r2-sync rotate-secret
 Remove the Cloudflare Worker and optionally delete the R2 bucket.
 
 ```bash
-npx obsidian-r2-sync teardown
+npx @yaop/obsidian-r2-sync teardown
 ```
 
 ## How It Works

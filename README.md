@@ -5,7 +5,7 @@ Sync your Obsidian vault across devices using Cloudflare R2 storage and a Cloudf
 ## Quick Start
 
 ```bash
-npx obsidian-r2-sync setup
+npx @yaop/obsidian-r2-sync setup
 ```
 
 The setup wizard provisions everything on your Cloudflare account (R2 bucket, Worker, auth tokens) and walks you through each step.
@@ -52,7 +52,7 @@ This is a one-time step. R2 has a generous free tier (10 GB storage, 10 million 
 ### 3. Run the setup wizard
 
 ```bash
-npx obsidian-r2-sync setup
+npx @yaop/obsidian-r2-sync setup
 ```
 
 The setup wizard will:
@@ -93,7 +93,7 @@ Then in Obsidian:
 To sync another device, generate a new token:
 
 ```bash
-npx obsidian-r2-sync add-device
+npx @yaop/obsidian-r2-sync add-device
 ```
 
 Install the plugin on the new device and configure it with the same endpoint URL and the new token.
@@ -102,12 +102,12 @@ Install the plugin on the new device and configure it with the same endpoint URL
 
 | Command | Description |
 |---|---|
-| `npx obsidian-r2-sync setup` | Full provisioning wizard (bucket + worker + first token) |
-| `npx obsidian-r2-sync deploy` | Redeploy the Worker (after updating to a new version) |
-| `npx obsidian-r2-sync add-device` | Generate an auth token for a new device |
-| `npx obsidian-r2-sync status` | Check Worker health |
-| `npx obsidian-r2-sync rotate-secret` | Generate a new auth secret (invalidates all device tokens) |
-| `npx obsidian-r2-sync teardown` | Remove Worker and optionally the R2 bucket |
+| `npx @yaop/obsidian-r2-sync setup` | Full provisioning wizard (bucket + worker + first token) |
+| `npx @yaop/obsidian-r2-sync deploy` | Redeploy the Worker (after updating to a new version) |
+| `npx @yaop/obsidian-r2-sync add-device` | Generate an auth token for a new device |
+| `npx @yaop/obsidian-r2-sync status` | Check Worker health |
+| `npx @yaop/obsidian-r2-sync rotate-secret` | Generate a new auth secret (invalidates all device tokens) |
+| `npx @yaop/obsidian-r2-sync teardown` | Remove Worker and optionally the R2 bucket |
 
 ## Pricing
 
@@ -168,7 +168,7 @@ The `v*` tag triggers the [release workflow](.github/workflows/release.yml), whi
 1. Verifies version consistency across all packages
 2. Builds and tests everything
 3. Creates a GitHub Release with the Obsidian plugin assets
-4. Publishes the CLI to npm as [`obsidian-r2-sync`](https://www.npmjs.com/package/obsidian-r2-sync)
+4. Publishes the CLI to npm as [`@yaop/obsidian-r2-sync`](https://www.npmjs.com/package/@yaop/obsidian-r2-sync)
 
 ## Architecture
 
