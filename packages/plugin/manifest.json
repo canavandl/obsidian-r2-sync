@@ -1,0 +1,9 @@
+{
+  "id": "obsidian-r2-sync",
+  "name": "R2 Vault Sync",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Sync your Obsidian vault via Cloudflare R2 storage",
+  "author": "obsidian-r2-sync",
+  "isDesktopOnly": false
+}

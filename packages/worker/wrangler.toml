@@ -1,0 +1,10 @@
+name = "obsidian-r2-sync"
+main = "src/index.ts"
+compatibility_date = "2025-02-01"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "obsidian-vault-sync"
+
+[vars]
+# AUTH_SECRET is set via `wrangler secret put AUTH_SECRET`

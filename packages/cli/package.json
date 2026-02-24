@@ -1,0 +1,27 @@
+{
+  "name": "@obsidian-r2-sync/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "obsidian-r2-sync": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@obsidian-r2-sync/shared": "workspace:*",
+    "cloudflare": "^4.2.0",
+    "commander": "^13.1.0",
+    "inquirer": "^12.4.0",
+    "chalk": "^5.4.1",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.0"
+  }
+}

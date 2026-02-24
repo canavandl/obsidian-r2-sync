@@ -1,0 +1,23 @@
+{
+  "name": "@obsidian-r2-sync/plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "clean": "rm -rf main.js *.map .turbo",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@obsidian-r2-sync/shared": "workspace:*",
+    "diff-match-patch": "^1.0.5"
+  },
+  "devDependencies": {
+    "@types/diff-match-patch": "^1.0.36",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.7.0"
+  }
+}
