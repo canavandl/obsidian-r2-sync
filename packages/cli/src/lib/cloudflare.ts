@@ -246,6 +246,18 @@ export class CloudflareClient {
   }
 
   /**
+   * Update a single secret on a deployed Worker without redeploying the whole script.
+   */
+  async putSecret(workerName: string, secretName: string, secretValue: string): Promise<void> {
+    await this.client.workers.scripts.secrets.update(workerName, {
+      account_id: this.accountId,
+      name: secretName,
+      text: secretValue,
+      type: "secret_text",
+    });
+  }
+
+  /**
    * Generate an HMAC-based auth token for a device.
    */
   static async generateToken(authSecret: string, deviceId: string): Promise<string> {

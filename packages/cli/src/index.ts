@@ -6,6 +6,7 @@ import { deployCommand } from "./commands/deploy.js";
 import { addDeviceCommand } from "./commands/add-device.js";
 import { statusCommand } from "./commands/status.js";
 import { teardownCommand } from "./commands/teardown.js";
+import { rotateSecretCommand } from "./commands/rotate-secret.js";
 
 const program = new Command();
 
@@ -19,5 +20,6 @@ program.addCommand(deployCommand);
 program.addCommand(addDeviceCommand);
 program.addCommand(statusCommand);
 program.addCommand(teardownCommand);
+program.addCommand(rotateSecretCommand);
 
 program.parse();
