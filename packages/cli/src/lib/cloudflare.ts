@@ -8,15 +8,38 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Read the pre-built Worker bundle.
- * Expects the worker package to have been built first (`pnpm --filter @obsidian-r2-sync/worker build`).
+ *
+ * When installed from npm, the worker bundle is at dist/worker/index.js
+ * (copied there by the prepack script). In the monorepo during development,
+ * it falls back to the workspace-relative path.
  */
 export function readWorkerBundle(bundlePath?: string): string {
-  const path = bundlePath ?? resolve(__dirname, "../../../worker/dist/index.js");
+  if (bundlePath) {
+    try {
+      return readFileSync(bundlePath, "utf-8");
+    } catch {
+      throw new Error(`Worker bundle not found at ${bundlePath}.`);
+    }
+  }
+
+  // 1. Check bundled location (npm install / npx)
+  const bundledPath = resolve(__dirname, "../worker/index.js");
   try {
-    return readFileSync(path, "utf-8");
+    return readFileSync(bundledPath, "utf-8");
+  } catch {
+    // not found — fall through
+  }
+
+  // 2. Fall back to monorepo-relative path (local dev)
+  const monoRepoPath = resolve(__dirname, "../../../worker/dist/index.js");
+  try {
+    return readFileSync(monoRepoPath, "utf-8");
   } catch {
     throw new Error(
-      `Worker bundle not found at ${path}. Run "pnpm --filter @obsidian-r2-sync/worker build" first.`,
+      `Worker bundle not found.\n` +
+      `  Checked: ${bundledPath}\n` +
+      `  Checked: ${monoRepoPath}\n` +
+      `Run "pnpm --filter @obsidian-r2-sync/worker build" first.`,
     );
   }
 }

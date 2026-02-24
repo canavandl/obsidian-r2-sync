@@ -1,19 +1,39 @@
 {
-  "name": "@obsidian-r2-sync/cli",
+  "name": "obsidian-r2-sync",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
+  "description": "CLI for provisioning Obsidian R2 Vault Sync infrastructure on Cloudflare",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canavandl/obsidian-r2-sync.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "obsidian",
+    "cloudflare",
+    "r2",
+    "sync",
+    "vault",
+    "cli"
+  ],
   "bin": {
     "obsidian-r2-sync": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist .turbo *.tsbuildinfo",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepack": "cp -r ../../packages/worker/dist dist/worker"
   },
   "dependencies": {
-    "@obsidian-r2-sync/shared": "workspace:*",
     "cloudflare": "^4.2.0",
     "commander": "^13.1.0",
     "inquirer": "^12.4.0",
@@ -21,6 +41,7 @@
     "ora": "^8.2.0"
   },
   "devDependencies": {
+    "@obsidian-r2-sync/shared": "workspace:*",
     "@types/node": "^22.13.0",
     "typescript": "^5.7.0"
   }

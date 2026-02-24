@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Verify version consistency across all locations
+      - name: Verify version consistency
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          check_version() {
+            local file="$1"
+            local actual="$2"
+            if [ "$actual" != "$TAG_VERSION" ]; then
+              echo "::error::Version mismatch in $file: expected $TAG_VERSION, got $actual"
+              exit 1
+            fi
+          }
+
+          check_version "package.json" \
+            "$(node -p "require('./package.json').version")"
+          check_version "packages/shared/package.json" \
+            "$(node -p "require('./packages/shared/package.json').version")"
+          check_version "packages/cli/package.json" \
+            "$(node -p "require('./packages/cli/package.json').version")"
+          check_version "packages/plugin/package.json" \
+            "$(node -p "require('./packages/plugin/package.json').version")"
+          check_version "packages/worker/package.json" \
+            "$(node -p "require('./packages/worker/package.json').version")"
+          check_version "packages/shared/src/constants.ts" \
+            "$(grep -oP 'PACKAGE_VERSION = "\K[^"]+' packages/shared/src/constants.ts)"
+          check_version "packages/plugin/manifest.json" \
+            "$(node -p "require('./packages/plugin/manifest.json').version")"
+
+          echo "All versions match: $TAG_VERSION"
+
+      - run: pnpm build
+
+      - run: pnpm test
+
+      # Stage plugin assets for GitHub Release
+      - name: Stage plugin assets
+        run: |
+          mkdir -p release-assets
+          cp packages/plugin/main.js release-assets/
+          cp packages/plugin/manifest.json release-assets/
+          [ -f packages/plugin/styles.css ] && cp packages/plugin/styles.css release-assets/ || true
+          cp versions.json release-assets/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin-assets
+          path: release-assets/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-dist
+          path: packages/cli/dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worker-dist
+          path: packages/worker/dist/
+
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: plugin-assets
+          path: release-assets
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/main.js
+            release-assets/manifest.json
+            release-assets/styles.css
+            release-assets/versions.json
+          generate_release_notes: true
+
+  publish-cli:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # Restore pre-built CLI dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-dist
+          path: packages/cli/dist
+
+      # Restore worker dist (needed by prepack to bundle into CLI)
+      - uses: actions/download-artifact@v4
+        with:
+          name: worker-dist
+          path: packages/worker/dist
+
+      - name: Publish CLI to npm
+        working-directory: packages/cli
+        run: pnpm publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
