@@ -20,9 +20,6 @@ importers:
 
   packages/cli:
     dependencies:
-      '@obsidian-r2-sync/shared':
-        specifier: workspace:*
-        version: link:../shared
       chalk:
         specifier: ^5.4.1
         version: 5.6.2
@@ -39,6 +36,9 @@ importers:
         specifier: ^8.2.0
         version: 8.2.0
     devDependencies:
+      '@obsidian-r2-sync/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@types/node':
         specifier: ^22.13.0
         version: 22.19.11
