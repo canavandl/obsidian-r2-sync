@@ -106,7 +106,24 @@ pnpm cli add-device
 | `pnpm cli deploy` | Redeploy the Worker (after code changes) |
 | `pnpm cli add-device` | Generate an auth token for a new device |
 | `pnpm cli status` | Check Worker health |
+| `pnpm cli rotate-secret` | Generate a new auth secret (invalidates all device tokens) |
 | `pnpm cli teardown` | Remove Worker and optionally the R2 bucket |
+
+## Pricing
+
+This project runs entirely on Cloudflare's free tier. For a typical personal vault (~500 MB, 2-3 devices, syncing a few dozen times per day), you will pay **$0/month**.
+
+| Resource | Free Allowance | Typical Usage |
+|---|---|---|
+| Workers requests | 100,000/day | ~50-200/day |
+| R2 storage | 10 GB/month | ~500 MB |
+| R2 Class A ops (PUT, LIST) | 1M/month | ~1,000-3,000/month |
+| R2 Class B ops (GET, HEAD) | 10M/month | ~3,000-10,000/month |
+| R2 egress | Always free | -- |
+
+If your vault exceeds 10 GB (large attachments, PDFs, images), R2 storage costs $0.015/GB/month beyond the free tier -- a 50 GB vault would be ~$0.60/month.
+
+See [Cloudflare Workers Pricing](https://developers.cloudflare.com/workers/platform/pricing/) and [R2 Pricing](https://developers.cloudflare.com/r2/pricing/) for full details.
 
 ## Development
 
