@@ -43,6 +43,8 @@ export interface SyncConfig {
   excludePatterns: string[];
   /** Whether sync-on-file-open is enabled */
   syncOnFileOpen: boolean;
+  /** Allow remote deletions to remove local files. Disabled by default. */
+  allowLocalDeletion?: boolean;
 }
 
 export type ConflictStrategy = "three-way-merge" | "keep-local" | "keep-remote" | "ask";
@@ -102,7 +104,7 @@ export interface HealthResponse {
 
 export interface ManifestResponse {
   manifest: SyncManifest;
-  etag: string;
+  etag: string | null;
 }
 
 /**

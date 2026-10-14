@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS: SyncConfig = {
     ".obsidian/workspace-mobile.json",
   ],
   syncOnFileOpen: false,
+  allowLocalDeletion: false,
 };
 
 export default class R2SyncPlugin extends Plugin {

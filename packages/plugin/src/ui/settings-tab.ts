@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type R2SyncPlugin from "../main.js";
 
 export class R2SyncSettingsTab extends PluginSettingTab {
@@ -105,10 +105,22 @@ export class R2SyncSettingsTab extends PluginSettingTab {
           }),
       );
 
+    new Setting(containerEl)
+      .setName("Allow local file deletion")
+      .setDesc("Allow files deleted on another device to be deleted here. When off, sync stops before deleting local files.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.allowLocalDeletion === true)
+          .onChange(async (value) => {
+            this.plugin.settings.allowLocalDeletion = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
     // Test connection button
     new Setting(containerEl)
       .setName("Test connection")
-      .setDesc("Verify that the Worker endpoint is reachable")
+      .setDesc("Verify the Worker endpoint, authentication token, and manifest access")
       .addButton((button) =>
         button.setButtonText("Test").onClick(async () => {
           try {
@@ -116,12 +128,11 @@ export class R2SyncSettingsTab extends PluginSettingTab {
             button.setDisabled(true);
             const { ApiClient } = await import("../api/client.js");
             const client = new ApiClient(this.plugin.settings.endpoint, this.plugin.settings.token);
-            const health = await client.health();
-            if (health.ok) {
-              button.setButtonText("✓ Connected");
-            }
+            await client.testConnection();
+            button.setButtonText("✓ Connected");
           } catch (e) {
             button.setButtonText("✗ Failed");
+            new Notice(`R2 Sync: Connection test failed — ${e instanceof Error ? e.message : "Unknown error"}`);
             console.error("Connection test failed:", e);
           } finally {
             this.resetTimer = setTimeout(() => {

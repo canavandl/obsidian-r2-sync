@@ -62,9 +62,24 @@ export class SyncEngine {
     // Step 2: Fetch remote manifest
     const { manifest: remoteManifest, etag } = await this.api.getManifest();
 
+    if (!forceFullSync && etag === null && Object.keys(this.plugin.baseManifest?.files ?? {}).length > 0) {
+      throw new Error(
+        "Remote sync manifest is missing. Sync stopped to protect local files. " +
+        "Check the Worker bucket and restore the manifest before syncing again.",
+      );
+    }
+
     // Step 3: Diff
     const baseManifest = forceFullSync ? null : this.plugin.baseManifest;
     const diff = diffManifests(localManifest, remoteManifest, baseManifest);
+
+    // Check before any transfers or conflict resolution can change vault files.
+    if (diff.toDeleteLocal.length > 0 && this.plugin.settings.allowLocalDeletion !== true) {
+      throw new Error(
+        `Sync stopped: the remote manifest would delete ${diff.toDeleteLocal.length} local file(s). ` +
+        "Local deletion is disabled in settings.",
+      );
+    }
 
     // Step 4: Check if anything to do
     if (this.isDiffEmpty(diff)) {

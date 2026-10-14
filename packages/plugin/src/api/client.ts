@@ -27,6 +27,13 @@ export class ApiClient {
     return res.json;
   }
 
+  async testConnection(): Promise<void> {
+    const health = await this.health();
+    if (!health.ok) throw new Error("Worker health check failed");
+    // The health route is public; only a protected request validates the token.
+    await this.getManifest();
+  }
+
   async getManifest(): Promise<ManifestResponse> {
     const res = await this.request("GET", API_ROUTES.MANIFEST);
     return {
