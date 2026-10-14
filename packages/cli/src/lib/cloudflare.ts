@@ -252,10 +252,13 @@ export class CloudflareClient {
     });
 
     // Get the account's workers.dev subdomain to build the URL
-    const subdomainInfo = await this.client.workers.accountSettings.get({
+    const subdomainInfo = await this.client.workers.subdomains.get({
       account_id: this.accountId,
     });
-    const accountSubdomain = (subdomainInfo as unknown as { subdomain: string }).subdomain;
+    const accountSubdomain = subdomainInfo.subdomain?.trim();
+    if (!accountSubdomain) {
+      throw new Error("Cloudflare did not return a workers.dev subdomain for this account.");
+    }
     return { url: `https://${workerName}.${accountSubdomain}.workers.dev` };
   }
 
